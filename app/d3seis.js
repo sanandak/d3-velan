@@ -82,7 +82,8 @@ angular.module('psvelApp')
       tScale2.domain([tmin, tmax]);
       vScale2.domain([-1, 1]);
 
-      var tAxis2 = d3.axisLeft(tScale2);
+      var tAxis2 = d3.axisLeft(tScale2)
+        .tickSizeInner(-w2);
 
       // stolen from bl.ocks.org
       // gradient fill from -1 to 1

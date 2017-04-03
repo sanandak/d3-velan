@@ -197,7 +197,14 @@ def handleMsg(msgJ):
                 # and the segy input file
                 with open(msgJ['filename'], 'rb') as sf: # input
                     # and do the nmo
-                    ret = sp.call(['sunmo', vnmo, tnmo], stdin=sf, stdout=tmpf)
+
+                    p1 = sp.Popen(['suwind', 'key=cdp', 'min={}'.format(ens), 'max={}'.format(ens)], stdin=sf, stdout=sp.PIPE)
+                    print('p1 ok')
+                    p2 = sp.Popen(['sunmo', vnmo, tnmo], stdin=p1.stdout, stdout=tmpf)
+                    print('p2 ok')
+                    p1.stdout.close()
+                    out,err = p2.communicate()
+                    print('suwind/nmo', out, err)
                     #print('nmo call', ret)
                     tmpf.close()
 

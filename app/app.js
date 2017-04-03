@@ -10,6 +10,7 @@ app.controller('MainCtrl', ['$scope', function ($scope) {
   self.version = _version;
   self.data = null;
   self.nmodata = null;
+  self.cdpfold = null;
   self.filename = null;
   self.fv = 1500;
   self.dv = 100;
@@ -74,7 +75,7 @@ app.controller('MainCtrl', ['$scope', function ($scope) {
             .key(function(d) {return d.cdp;})
             .entries(segyHdrs.hdrs);
             // returns [{key:'0', values:[trc0, trc1, ...]}]
-
+          console.log('hdrs by ens', hdrsByEnsemble);
           self.nens = hdrsByEnsemble.length;
           self.ens0 = hdrsByEnsemble[0].key;
           self.ensN = hdrsByEnsemble[self.nens-1].key;
@@ -83,8 +84,10 @@ app.controller('MainCtrl', ['$scope', function ($scope) {
           self.startT = 0.;
           self.endT = (self.ns-1) * self.dt;
           self.currEns = +self.ens0;
-
-          console.log(self.nens, self.ens0, self.ensN, self.dt, self.currEns);
+          self.cdpfold = hdrsByEnsemble.map(function(d){return {cdp:d.key, fold:d.values.length}});
+          console.log('cdpfold', self.cdpfold);
+          $scope.$apply();
+//          console.log(self.nens, self.ens0, self.ensN, self.dt, self.currEns);
         } else if (msg['cmd'] === 'getVelan') {
           console.log('velan');
           var velan = JSON.parse(msg['velan']);

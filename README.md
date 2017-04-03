@@ -55,6 +55,10 @@ Install SU (http://www.cwp.mines.edu/cwpcodes) and make sure `$CWPROOT/bin` is i
   - websockets
   - numpy and scipy are installed with obspy
 
+  SU
+  - suvelan: calculates semblance
+  - sunmo: calculates NMO corrected gather.
+
 ## Usage
 
     cd $HOME/.../d3-velan
@@ -68,7 +72,7 @@ first _ensemble_ (by default, the first `cdp` location).
 Click on the semblace plot to pick time-velocity pairs to construct
 a velocity model.  The `cdp` gather is NMO corrected to that model.
 
-The saved picks file is a JSON file that is an array of traces.
+The saved picks file is a JSON file that has an array of picks.
 - sufile: file name of the picked data
 - picktime: when the picking was done
 - picks: an array of picks (`{t:..., v:..., a:...}`)

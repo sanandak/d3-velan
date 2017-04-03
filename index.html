@@ -7,6 +7,8 @@
   <script type="text/javascript" src="app/app.js" charset="utf-8"></script>
   <script type="text/javascript" src="app/d3velan.js" charset="utf-8"></script>
   <script type="text/javascript" src="app/d3seis.js" charset="utf-8"></script>
+  <script type="text/javascript" src="app/d3fold.js" charset="utf-8"></script>
+
   <script type="text/javascript"
   src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
   </script>
@@ -35,6 +37,9 @@
       <button class="btn btn-primary btn-lg" ng-click="mainctrl.open()" ng-disabled="!mainctrl.wsIsOpen">Open SU File</button>
       <button class="btn btn-primary btn-lg" ng-click="mainctrl.save()">Save Picks...</button>
 
+      <div class="well">
+        <d3-fold ng-if="mainctrl.cdpfold" data="mainctrl.cdpfold"></d3-fold>
+      </div>
       <div>
         Number of Ensembles: {{mainctrl.nens}}, Ensemble 0:{{mainctrl.ens0}},
         Ensemble N: {{mainctrl.ensN}}</br>
