@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html ng-app="psvelApp">
+<head>
+  <title>d3-based SU Picker</title>
+  <script src="bower_components/d3/d3.min.js" charset="utf-8"></script>
+  <script src="bower_components/angular/angular.min.js" charset="utf-8"></script>
+  <script type="text/javascript" src="app/app.js" charset="utf-8"></script>
+  <script type="text/javascript" src="app/d3velan.js" charset="utf-8"></script>
+  <script type="text/javascript" src="app/d3seis.js" charset="utf-8"></script>
+  <script type="text/javascript"
+  src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+  </script>
+  <link href="app/chart.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+</head>
+<body>
+  <div ng-controller="MainCtrl as mainctrl">
+    <div class="well">
+      <h1>SU Velocity Picker <small>v.{{mainctrl.version}}</small></h1>
+
+      <div>
+        Starting Velocity (m/s):
+        <input type="number" ng-model="mainctrl.fv" min="1500" max="10000">
+        Velocity Increment (m/s):
+        <input type="number" ng-model="mainctrl.dv" min="10" max="500">
+        Number of Velocities:
+        <input type="number" ng-model="mainctrl.nv" min="10" max="100"></br>
+
+        Will calculate semblance for {{mainctrl.nv}} velocities from {{mainctrl.fv}} to {{mainctrl.fv +  mainctrl.dv * (mainctrl.nv - 1)}}
+      </div>
+
+      <input style="display:none" type="file" id="openfile" accept=".su,.segy,.sgy"></input>
+      <input style="display:none" type="file" id="savefile" accept=".pks,.json,.txt" nwsaveas></input>
+      <button class="btn btn-primary btn-lg" ng-click="mainctrl.open()" ng-disabled="!mainctrl.wsIsOpen">Open SU File</button>
+      <button class="btn btn-primary btn-lg" ng-click="mainctrl.save()">Save Picks...</button>
+
+      <div>
+        Number of Ensembles: {{mainctrl.nens}}, Ensemble 0:{{mainctrl.ens0}},
+        Ensemble N: {{mainctrl.ensN}}</br>
+        Current Ens<input type="number" min="mainctrl.ens0" max="mainctrl.ensN" ng-model="mainctrl.currEns">
+      </div>
+
+      <div class="well">
+        <d3-velan ng-if="mainctrl.data" data="mainctrl.data" setpicks="mainctrl.setpicks(picks)"></d3-velan>
+        <d3-seis ng-if="mainctrl.nmodata" data="mainctrl.nmodata"></d3-seis>
+        <div id="tooltip">
+          <p><span id="value">
+          </p>
+        </div>
+      </div>
+
+
+    </div>
+  </div>
+</body>
+</html>

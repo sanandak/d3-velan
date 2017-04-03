@@ -1,0 +1,119 @@
+axis path,
+.axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+}
+
+.ctext {
+    font-family: monospace;
+    font-size: 14;
+    text-anchor: middle;
+
+}
+
+.tick {
+    font: 10px sans-serif;
+}
+
+.line {
+    fill: none;
+    stroke: #000;
+    stroke-width: .5px;
+}
+
+.fline {
+    fill: none;
+    stroke: #000;
+    stroke-width: .5px;
+}
+
+.ffills {
+    fill: url(#focus-area-gradient)
+}
+
+/*
+.ffills {
+    clip-path: url(#clip);
+}
+.fline {
+    clip-path: url(#clip);
+}
+*/
+
+.cursor {
+    fill: #d2e7d2;
+    fill-opacity: 0.4;
+    stroke: #228b22;
+    stroke-width: 1px;
+}
+
+.markpts {
+    fill: black;
+    stroke: none;
+}
+
+.markline {
+    fill: none;
+    stroke-width: 1px;
+    stroke: black;
+}
+
+.overlay {
+    fill: none;
+    stroke: none;
+    pointer-events: all;
+}
+
+.nmo {
+    stroke: black;
+    stroke-width: 0.5px;
+    fill: none;
+}
+.psd {
+    stroke: black;
+    stroke-width: 1px;
+    fill: none;
+}
+
+
+.zoom {
+  cursor: move;
+  fill: none;
+  pointer-events: all;
+}
+
+.picks {
+    pointer-events: all;
+}
+
+rect.cell-hover {
+  stroke: #F00;
+  stroke-width:0.3px;
+}
+
+#tooltip {
+   position: absolute;
+   width: 200px;
+   height: auto;
+   padding: 10px;
+   background-color: white;
+   -webkit-border-radius: 10px;
+   -moz-border-radius: 10px;
+   border-radius: 10px;
+   -webkit-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+   -moz-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+   box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+   pointer-events: none;
+ }
+
+ #tooltip.hidden {
+   display: none;
+ }
+
+ #tooltip p {
+   margin: 0;
+   font-family: sans-serif;
+   font-size: 12px;
+   line-height: 20px;
+ }
