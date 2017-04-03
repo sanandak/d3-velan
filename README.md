@@ -16,6 +16,8 @@ The semblance calculation and the NMO corrections are done in `velServer.py`
 by SU (http://www.cwp.mines.edu/cwpcodes) and provided to `d3-velan` through
 websockets.
 
+*You must start velServer manually*
+
 ## Installation
 
 Download nwjs  (http://nwjs.io)
@@ -39,6 +41,8 @@ Install python3 3.5 or less (preferably through anaconda (http://continuum.io))
     conda install obspy
     conda install websockets
 
+Install SU (http://www.cwp.mines.edu/cwpcodes) and make sure `$CWPROOT/bin` is in the path.
+
 ## Requirements
 
   These are installed by `npm` and `bower`
@@ -53,20 +57,21 @@ Install python3 3.5 or less (preferably through anaconda (http://continuum.io))
 
 ## Usage
 
-    /path/to/nwjs /path/to/d3-velan
+    cd $HOME/.../d3-velan
+    python ./velServer.py
+    /path/to/nwjs .
 
-  Buttons to open an SU file and to save velocity picks.
+Buttons to open an SU file and to save velocity picks.
 
 The viewer displays the semblance plot for the
 first _ensemble_ (by default, the first `cdp` location).
 Click on the semblace plot to pick time-velocity pairs to construct
 a velocity model.  The `cdp` gather is NMO corrected to that model.
 
-
 The saved picks file is a JSON file that is an array of traces.
 - sufile: file name of the picked data
 - picktime: when the picking was done
-- picks: an array of picks
+- picks: an array of picks (`{t:..., v:..., a:...}`)
 
 ## TODO
 

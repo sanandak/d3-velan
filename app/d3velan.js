@@ -115,21 +115,21 @@ angular.module('psvelApp')
         // see if we are re-picking a time...
         var idx;
         // shift to delete a pick
-        if(d3.event.shiftKey) { // delete the nearest pick
+        if(d3.event.shiftKey) { // delete the nearest pick after the mouse
           idx = bisectT(vpicks, tvel);
           console.log('found a pick', idx);
           if (idx >= 0) {
             vpicks.splice(idx,1);
           }
-          // if we have deleted all the picks, excepth
+          // if we have deleted all the picks, except
           // for the zero-time one I inserted, clear the array.
-          if(vpicks.length === 1) {vpicks = [];}
+          if(vpicks.length === 1) { vpicks = [];}
         } else { // no shift key - add/update a pick...
-          // find the closest rect to get a
+          // find the closest rect to get `a`
           var closest = data.filter(function(d) {
             return Math.abs(d.t-tvel)<dt && Math.abs(d.v-mvel)<dv;
           })
-          var apicked;
+          var apicked=-1;
           if(closest.length > 0) {
             apicked = closest[0].a;
           }
@@ -146,13 +146,15 @@ angular.module('psvelApp')
             vpicks.push({v: mvel, t: tvel, a: apicked, pkid: ++pkId});
           };
 
-          // sort in time order
-          if(vpicks.length > 1) {
-            vpicks.sort(function(a,b){return a.t-b.t;})
-            vpicks[0].v = vpicks[1].v;
-          }
-          //console.log('vpicks', vpicks);
         }
+        
+        // sort in time order
+        if(vpicks.length > 1) {
+          vpicks.sort(function(a,b){return a.t-b.t;})
+          vpicks[0].v = vpicks[1].v;
+        }
+        //console.log('vpicks', vpicks);
+
         // redraw the picks...
         var pts = mark.selectAll('.markpts')
           .data(vpicks, function(d) {return d.pkid;})

@@ -255,11 +255,12 @@ def handleMsg(msgJ):
 
         dvstr = "dv={}".format(dv)
         fvstr = "fv={}".format(fv)
+        nvstr = "nv={}".format(nv)
 
         tmpf = tempfile.NamedTemporaryFile(delete=False) # output
         with open(segy.filename, 'rb') as sf:# input
             #tmpfname = tmpf.name
-            ret = sp.call(['suvelan', dvstr, fvstr], stdin=sf, stdout=tmpf)
+            ret = sp.call(['suvelan', dvstr, fvstr, nvstr], stdin=sf, stdout=tmpf)
             print('wrote suvelan file', ret, tmpf.name)
             tmpf.close()
 
