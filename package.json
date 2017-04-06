@@ -1,0 +1,29 @@
+{
+  "name": "psvel-app",
+  "version": "0.1.0",
+  "main": "index.html",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/sanandak/d3-velan.git"
+  },
+  "author": "Sridhar Anandakrishnan <sak@essc.psu.edu>",
+  "license": "MIT",
+  "single-instance": true,
+  "window": {
+    "title": "PSU d3 velocity analysis",
+    "width": 900,
+    "height": 1000,
+    "toolbar": true
+  },
+  "chromium-args": "--child-clean-exit",
+  "dependencies": {
+    "d3": "^4.6.0",
+    "sprintf-js": "^1.0.3"
+  },
+  "devDependencies": {
+    "eslint": "^3.18.0",
+    "eslint-config-standard": "^7.1.0",
+    "eslint-plugin-promise": "^3.5.0",
+    "eslint-plugin-standard": "^2.1.1"
+  }
+}
