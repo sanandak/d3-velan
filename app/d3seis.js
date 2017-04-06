@@ -14,10 +14,14 @@ angular.module('psvelApp')
     function link(scope, element, attr) {
       'use strict';
 
+      console.log(scope.test);
+
       // size of the focus window (500x600)
       var margins2 = {left: 50,right: 30,top: 30,bottom: 30},
         w2 = 400 - margins2.left - margins2.right,
         h2 = 600 - margins2.top - margins2.bottom;
+
+      var firstTime = true; // flag for initial display
 
       var data;
       var dt,traces, currEns, ensIdx, pickedTraces = [];
@@ -28,7 +32,6 @@ angular.module('psvelApp')
       /* init - label traces with unique id and sort */
       // generate the y- (time) scale for the main window
       var tmin, tmax;
-      var tScale = d3.scaleLinear();
       var tScale2 = d3.scaleLinear();
       var oScale2 = d3.scaleLinear()
           .range([0,w2]);
@@ -69,11 +72,14 @@ angular.module('psvelApp')
        */
 
       var focus = d3.select(element[0])
+          .attr('id', 'focus')
           .append('svg')
           .attr('width', w2 + margins2.left + margins2.right)
           .attr('height', h2 + margins2.top + margins2.bottom)
           .append('g')
-          .attr('transform', 'translate(' + margins2.left + ',' + margins2.top + ')');
+          .attr('transform', 'translate(' + margins2.left + ',' + margins2.top + ')')
+
+
 
       var vScale2 = d3.scaleLinear().range([0, w2]);
       tScale2 = d3.scaleLinear().range([0, h2]);
@@ -175,7 +181,7 @@ angular.module('psvelApp')
       var updateFocusLines = function() {
         ntrcsFoc = lastTrc - firstTrc + 1;
         //console.log('update lines', lastTrc, firstTrc, ntrcsFoc);
-        var l = d3.selectAll('.flineg')
+        var l = focus.selectAll('.flineg')
             .selectAll('.fline')
             .data(traces.slice(firstTrc, lastTrc + 1), function(d) {
               return d.id;
@@ -210,7 +216,7 @@ angular.module('psvelApp')
 
       var updateFocusAreas = function() {
         ntrcsFoc = lastTrc - firstTrc + 1;
-        var l = d3.selectAll('.fareag')
+        var l = focus.selectAll('.fareag')
             .selectAll('.ffills')
             .data(traces.slice(firstTrc, lastTrc + 1), function(d) {
               return d.id;
@@ -240,9 +246,9 @@ angular.module('psvelApp')
           .attr('class', 'fareag');
       updateFocusAreas();
 
-      var flineg = clipping.append('g')
-          .attr('class', 'flineg');
-      updateFocusLines();
+//      var flineg = clipping.append('g')
+//          .attr('class', 'flineg');
+//      updateFocusLines();
       focus.append('g')
         .attr('class', 'axis x-axis')
         .call(oAxis2.ticks(5));
@@ -316,7 +322,23 @@ angular.module('psvelApp')
 
       /* handle key interactions */
       var idx;
-      d3.select('body')
+      //      d3.select('body')
+
+      // overlay that receives mouse clicks
+      var over = focus.append('rect')
+          .attr('class', 'overlay')
+          .attr('width', w2)
+          .attr('height', h2);
+
+      // when I leave the plot, remove key handlers
+      over.on('mouseout', function() {
+        console.log('exit focus');
+        d3.select('body').on('keydown', null);
+      })
+      // when I enter, add key handlers
+      over.on('mouseover', function() {
+        console.log('entered focus');
+        d3.select('body')
         .on('keydown', function() {
           //console.log(d3.event.key, d3.event.code);
           // scale traces up and down
@@ -324,7 +346,7 @@ angular.module('psvelApp')
             var scl = d3.event.shiftKey ? 0.5 : 2;
 
             displayScale *= scl;
-            updateFocusLines();
+//            updateFocusLines();
             updateFocusAreas();
           }
 
@@ -494,7 +516,7 @@ angular.module('psvelApp')
               id: trc.id,
               // used to plot the pick in x
               tracens: trc.tracens,
-              ens: trc.ffid,
+              ens: trc.cdp,
               pickT: pickT,
               pickIdx: cursI,
               pickVal: trc.samps[cursI].v * ampscale,
@@ -597,7 +619,7 @@ angular.module('psvelApp')
             firstTrc = Math.max(cursTrc - Math.floor(ntrcsFoc/4), 0);
             lastTrc = Math.min(cursTrc + Math.floor(ntrcsFoc/4), ntrcs-1);
             ntrcsFoc = lastTrc - firstTrc + 1;
-            updateFocusLines();
+//            updateFocusLines();
             updateFocusAreas();
 
             updateCursor();
@@ -620,7 +642,7 @@ angular.module('psvelApp')
             lastTrc = ntrcs - 1;
             ntrcsFoc = lastTrc - firstTrc + 1;
             //console.log('trcs', cursTrc, firstTrc, lastTrc);
-            updateFocusLines();
+//            updateFocusLines();
             updateFocusAreas();
             updateCursor();
 
@@ -647,7 +669,7 @@ angular.module('psvelApp')
                 return 'translate(' + xofsFoc + ',0)';
               });
           }
-        });
+        })})
 
       // TODO - on mouseover of pick, display pick info?
       /*
@@ -672,7 +694,7 @@ angular.module('psvelApp')
         // group into ensembles
         tracesByEnsemble = d3.nest()
           .key(function(d) {
-            return d.ffid;
+            return d.cdp;
           })
           .entries(data.traces);
         // returns [{key:'0', values:[trc0, trc1, ...]}]
@@ -684,15 +706,16 @@ angular.module('psvelApp')
 
         tmin = d3.min(traces[0].samps, function(d){return d.t;});
         tmax = d3.max(traces[0].samps, function(d){return d.t;});
-        tScale.domain([tmin, tmax]);
-        tScale2.domain([tmin, tmax]);
+        if(firstTime) {
+          tScale2.domain([tmin, tmax]);
+        }
 
         // add a "trace number within ensemble" header word
         // and uniquify the trace by labeling with <ffid>_tracens
         for(var i=0; i<tracesByEnsemble.length; i++) {
           tracesByEnsemble[i].values.forEach(function(d,i) {
             d.tracens = i;
-            d.id = d.ffid + '_' + i; // a string
+            d.id = d.cdp + '_' + i; // a string
           });
         }
         //console.log('ens', tracesByEnsemble, currEns);
@@ -702,24 +725,59 @@ angular.module('psvelApp')
         ntrcs = traces.length;
         npts = traces[0].samps.length;
 
-        cursI = Math.floor(npts/2);
-        cursT = traces[0].samps[cursI].t;
-        cursTrc = Math.floor((lastTrc - firstTrc) / 2);
-        oScale2.domain([traces[firstTrc].offset, traces[lastTrc].offset]);
+        if(firstTime) {
+          cursI = Math.floor(npts/2);
+          cursT = traces[0].samps[cursI].t;
+          cursTrc = Math.floor((lastTrc - firstTrc) / 2);
+          oScale2.domain([traces[firstTrc].offset, traces[lastTrc].offset]);
+        }
+        firstTime = false;
+        console.log('in d3-seis, init, test:', scope.test);
       }
+
+      var tv = null;
+      // define nmo line - drawn in watch(tv)
+      focus.append('g')
+        .append('path')
+        .attr('class', 'nmoline')
+
+      var nmolinefn = d3.line()
+          .x(function(d) {return oScale2(d[0]);})
+          .y(function(d) {return tScale2(d[1]);});
+
+      scope.$watch('tv', function() {
+        //console.log('tv watch', scope.tv);
+        tv = scope.tv;
+        if(!tv) {return;}
+        var t2 = tv.t * tv.t;
+        var v2 = tv.v * tv.v;
+        //console.log('tv', tv, t2, v2);
+        var nmopts = traces.map(function(d) {
+          var x = d.offset;
+          return [x,  Math.sqrt(t2 + x*x/v2)];
+        });
+
+        focus.selectAll('.nmoline')
+          .datum(nmopts)
+          .attr('d', nmolinefn);
+        focus.selectAll('.nmoline')
+          .transition()
+          //.delay(500)
+          //.duration(500)
+          .attr('d', nmolinefn);
+      });
 
       scope.$watch('data', function() {
         data = scope.data;
-        console.log('d3seis watch, data:', data);
+        console.log('d3seis watch, data:', scope.test, data);
         init();
 
         // update all...
-        updateFocusLines();
+//        updateFocusLines();
         updateFocusAreas();
         updateCursor();
         updatePicks();
       });
-
     }
 
     return {
@@ -727,6 +785,8 @@ angular.module('psvelApp')
       restrict: 'E',
       scope: {
         data: '=',
+        tv: '=',
+        test: '=',
         setpicks: '&'
       }
     };

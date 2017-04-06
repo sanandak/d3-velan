@@ -199,12 +199,13 @@ def handleMsg(msgJ):
                     # and do the nmo
 
                     p1 = sp.Popen(['suwind', 'key=cdp', 'min={}'.format(ens), 'max={}'.format(ens)], stdin=sf, stdout=sp.PIPE)
-                    print('p1 ok')
-                    p2 = sp.Popen(['sunmo', vnmo, tnmo], stdin=p1.stdout, stdout=tmpf)
+                    p2 = sp.Popen(['sugain', "tpow=1.5"], stdin=p1.stdout, stdout=sp.PIPE)
+                    p3 = sp.Popen(['sunmo', vnmo, tnmo], stdin=p2.stdout, stdout=tmpf)
                     print('p2 ok')
                     p1.stdout.close()
-                    out,err = p2.communicate()
-                    print('suwind/nmo', out, err)
+                    p2.stdout.close()
+                    out,err = p3.communicate()
+                    print('suwind/sugain/nmo', out, err)
                     #print('nmo call', ret)
                     tmpf.close()
 
@@ -216,7 +217,7 @@ def handleMsg(msgJ):
                 #print('nmo ntrcs', nmontrcs)
                 nmotrcs = [nsegy.getTrc(i, headonly=False, trctype='seismic') for i in range(nmontrcs)]
                 # delete the tmp file
-                os.unlink(tmpf.name)
+                #os.unlink(tmpf.name)
                 print('nmo trcs', len(nmotrcs))
             except:
                 print('err nmo', ens)
@@ -267,8 +268,16 @@ def handleMsg(msgJ):
         tmpf = tempfile.NamedTemporaryFile(delete=False) # output
         with open(segy.filename, 'rb') as sf:# input
             #tmpfname = tmpf.name
-            ret = sp.call(['suvelan', dvstr, fvstr, nvstr], stdin=sf, stdout=tmpf)
-            print('wrote suvelan file', ret, tmpf.name)
+            p1 = sp.Popen(['suwind', 'key=cdp', 'min={}'.format(ens), 'max={}'.format(ens)], stdin=sf, stdout=sp.PIPE)
+            p2 = sp.Popen(['sugain', "tpow=1.5"], stdin=p1.stdout, stdout=sp.PIPE)
+            p3 = sp.Popen(['suvelan', dvstr, fvstr, nvstr], stdin=p2.stdout, stdout=tmpf)
+            print('p3 ok')
+            p1.stdout.close()
+            p2.stdout.close()
+            out,err = p3.communicate()
+            print('suwind/sugain/velan', out, err)
+            #ret = sp.call(['suvelan', dvstr, fvstr, nvstr], stdin=sf, stdout=tmpf)
+            #print('wrote suvelan file', ret, tmpf.name)
             tmpf.close()
 
         vsegy = Segy()
@@ -282,9 +291,10 @@ def handleMsg(msgJ):
         print('dt, nsamps', dt, nsamps)
         #print(json.dumps(traces[0]))
         ret = json.dumps({"cmd": "getVelan",
-                          "velan" : json.dumps({"dt":dt, "ns":nsamps,
-                                               "filename": vsegy.filename,
-                                               "traces":vtrcs})})
+                          "velan" : json.dumps({"dt":dt, "ns":nsamps, "fv":fv,
+                            "dv":dv, "nv":nv,
+                            "filename": vsegy.filename,
+                            "traces":vtrcs})})
         #ret = json.dumps({"cmd": "velan", "velan": "test"})
         return ret
 

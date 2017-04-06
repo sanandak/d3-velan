@@ -10,8 +10,8 @@ angular.module('psvelApp')
 
     // semblance array is of the form {t:..., v:..., a:...}
     // where t is time, v is velocity, and a is semblance power
-    var data = scope.data;
-    console.log('in d3velan', data);
+    var data = scope.data.varr;
+    console.log('in d3velan', data, scope.data.cdp, scope.data.ns, scope.data.fv);
 
     var svg = d3.select(element[0])
         .append('svg')
@@ -20,53 +20,58 @@ angular.module('psvelApp')
         .append('g')
         .attr('transform', 'translate(' + margins.left + ',' + margins.top + ')');
 
-    var color = d3.interpolateRgb('red', 'blue');
+    var color = d3.scaleSequential(d3.interpolateWarm);
 
-    var vmin = d3.min(data, function(d) {return d.v;})
-    var vmax = d3.max(data, function(d) {return d.v;})
-    var velnest = d3.nest().key(function(d) {return d.v;}).entries(data);
-    // velnest: [{key: v1, values:{t:, v:}}, {key: v2, values: {}}, ...]
-    var nv = velnest.length; // number of velocities
-    var dv = (vmax - vmin) / (nv-1);
-
-    var nt = velnest[0].values.length; // each velocity has all the times...
-    var tmin = velnest[0].values[0].t;
-    var tmax = velnest[0].values[nt-1].t;
-    var dt = (tmax-tmin)/ (nt-1);
-
-    var vWidth = w/nv;
-    var tWidth = h/nt;
+    var nv, dv, vmin, vmax, nt, dt, tmin, tmax;
+    var vWidth, tWidth;
+    var cdp;
 
     // offset the rect left/top edge so that the pixel is centered
-    var vScale = d3.scaleLinear().range([0 + vWidth/2, w - vWidth/2]).domain([vmin, vmax]);
-    var tScale = d3.scaleLinear().range([0 + tWidth/2, h - tWidth/2 ]).domain([tmin, tmax]);
-
+    var vScale = d3.scaleLinear();
+    var tScale = d3.scaleLinear();
     var vAxis = d3.axisTop(vScale);
     var tAxis = d3.axisLeft(tScale);
 
     // velocity picks...
-    var vpicks = [];
+    var allpicks = []; // [{cdp:.., picks:..}, {cdp:.., picks:..}...]
 
     svg.append('g')
       .attr('class', 'axis x-axis')
-      .call(vAxis.ticks(5));
     svg.append('g')
       .attr('class', 'axis y-axis')
-      .call(tAxis.ticks(5))
 
     // calculate the max semblance value in the panel
-    var amax = d3.max(data, function(d) {return d.a;}); // percentile?
+    //var amax = d3.max(data, function(d) {return d.a;}); // percentile?
+    var amax = d3.quantile(data.sort(function(a,b) {
+      return a.a-b.a;
+    }), 0.99, function(d) {return d.a})
     console.log('amax', amax);
     //amax = 1;
+
+    color.domain([0,amax])
 
     // unique pick id - used for the d3 data join
     var pkId = 0;
     // to delete a pick, search for the nearest one...
     var bisectT = d3.bisector(function(d){return d.t;}).left;
 
-    var velmap = svg.append('g')
+    var draw = function() {
+      var vsel = svg.select('.velmapg')  //.selectAll('.velmapg')
       .selectAll('.vel')
       .data(data, function(d){return d.t +'_'+ d.v;})
+
+      vsel
+      .exit()
+      .remove()
+
+      vsel
+      .attr('x', function(d) {return vScale(d.v) - vWidth/2;})
+      .attr('y', function(d) {return tScale(d.t) - tWidth/2;})
+      .attr('width', vWidth)
+      .attr('height', tWidth)
+      .style('fill', function(d){return color(d.a);})
+
+      vsel
       .enter()
       .append('rect')
       .attr('class', 'vel')
@@ -88,6 +93,9 @@ angular.module('psvelApp')
         var sembstr = '';
         if(closest.length > 0) {
           sembstr = sprintf('\nSemblance = %.3f', closest[0].a);
+          // tell app.js about the new mouse position
+          scope.settv({tv: {t: closest[0].t, v: closest[0].v}});
+          //scope.$apply()
         }
 
         d3.select(this).classed('cell-hover', true);
@@ -109,8 +117,19 @@ angular.module('psvelApp')
         var mvel = vScale.invert(m[0] + vWidth/2);
         var tvel = Math.floor(tScale.invert(m[1] + tWidth/2) / dt) * dt;
         // if no picks, put in one at t=0
+
+        // shallow copy of the picks entry..
+        var cdppicks = allpicks.find(function(d) {return d.cdp == cdp;});
+        var vpicks = [];
+        if(typeof cdppicks == 'undefined') {
+          cdppicks = {cdp: cdp, picks: vpicks};
+          allpicks.push(cdppicks);
+        } else {
+          vpicks = cdppicks.picks;
+        }
+        
         if(vpicks.length === 0) {
-          vpicks.push({v:mvel, t:0, pkid:0, a:0});
+          vpicks.push({v:mvel, t:0, pkid:0, a:0, cdp:cdp});
         }
         // see if we are re-picking a time...
         var idx;
@@ -143,11 +162,11 @@ angular.module('psvelApp')
             vpicks[idx].v = mvel;
             vpicks[idx].a = apicked;
           } else { // add a new pick
-            vpicks.push({v: mvel, t: tvel, a: apicked, pkid: ++pkId});
+            vpicks.push({v: mvel, t: tvel, a: apicked, cdp: cdp, pkid: ++pkId});
           };
 
         }
-        
+
         // sort in time order
         if(vpicks.length > 1) {
           vpicks.sort(function(a,b){return a.t-b.t;})
@@ -157,7 +176,8 @@ angular.module('psvelApp')
 
         // redraw the picks...
         var pts = mark.selectAll('.markpts')
-          .data(vpicks, function(d) {return d.pkid;})
+          .data(vpicks.filter(function(d){return d.cdp==cdp;}),
+            function(d) {return d.pkid;})
 
         pts.exit()
           .remove()
@@ -169,21 +189,27 @@ angular.module('psvelApp')
           .append('circle')
           .attr('class', 'markpts')
           .attr('r', '3px')
-          // on hover over a pick, make it big
-          .on('mouseover', function() {d3.select(this).attr('r', '6px');})
-          .on('mouseout', function() {d3.select(this).attr('r', '3px');})
-          .attr('cx', function(d) {console.log('enter', d);return vScale(d.v) - vWidth/2;})
+          .attr('cx', function(d) {return vScale(d.v) - vWidth/2;})
           .attr('cy', function(d) {return tScale(d.t) - tWidth/2;})
 
-        // tell controller app about the vel picks
-        scope.setpicks({picks: vpicks});
-
         // draw the line between picks.
+        //console.log('vpicks', cdp, vpicks, vpicks.filter(function(d){return d.cdp == cdp;}));
         svg.selectAll('.markline')
-          .datum(vpicks)
+          .datum(vpicks.filter(function(d) {return d.cdp == cdp;}))
           .attr('d', markLineFn)
 
+        
+        // tell controller app about the vel picks
+        scope.setpicks({picks: allpicks});
+
       }); // on click
+
+
+    }
+
+    var velmap = svg.append('g')
+      .attr('id', 'velmap')
+      .attr('class', 'velmapg')
 
     // put these on top of the color plot of rects
     var mark = svg.append('g')
@@ -195,6 +221,80 @@ angular.module('psvelApp')
     var markLineFn = d3.line()
       .x(function(d) {return vScale(d.v) - vWidth/2;})
       .y(function(d) {return tScale(d.t) - tWidth/2;})
+
+    //draw();
+
+    function init() {
+      nv = scope.data.nv;
+      dv = scope.data.dv;
+      vmin = scope.data.fv;
+      vmax = vmin + dv * (nv - 1)
+
+      nt = scope.data.ns;
+      dt = scope.data.dt;
+      tmin = 0; // FIXME
+      tmax = tmin + dt * (nt - 1);
+
+      cdp = scope.data.cdp;
+
+      vWidth = w/nv;
+      tWidth = h/nt;
+
+      // offset the rect left/top edge so that the pixel is centered
+      vScale.range([0 + vWidth/2, w - vWidth/2]).domain([vmin, vmax]);
+      tScale.range([0 + tWidth/2, h - tWidth/2 ]).domain([tmin, tmax]);
+
+      vAxis = d3.axisTop(vScale);
+      tAxis = d3.axisLeft(tScale);
+
+      svg.select('.x-axis')
+        .call(vAxis.ticks(5))
+      svg.select('.y-axis')
+          .call(tAxis.ticks(5))
+
+      // calculate the max semblance value in the panel
+      //var amax = d3.max(data, function(d) {return d.a;}); // percentile?
+      amax = d3.quantile(data.sort(function(a,b) {
+        return a.a-b.a;
+      }), 0.95, function(d) {return d.a})
+      draw();
+
+      // redraw the picks...
+      var cdppicks = allpicks.find(function(d) {return d.cdp == cdp;});
+      var vpicks;
+      if(typeof cdppicks == 'undefined') {
+        vpicks = [];
+      } else {
+        vpicks = cdppicks.picks;
+      }
+      var pts = mark.selectAll('.markpts')
+        .data(vpicks, function(d) {return cdp + '_' + d.pkid;})
+
+      pts.exit()
+        .remove()
+      pts.transition()
+        .duration(750)
+        .attr('cx', function(d) {console.log('tx', d);return vScale(d.v) - vWidth/2;})
+        .attr('cy', function(d) {return tScale(d.t) - tWidth/2;})
+      pts.enter()
+        .append('circle')
+        .attr('class', 'markpts')
+        .attr('r', '3px')
+        .attr('cx', function(d) {return vScale(d.v) - vWidth/2;})
+        .attr('cy', function(d) {return tScale(d.t) - tWidth/2;})
+
+      svg.selectAll('.markline')
+        .datum(vpicks.filter(function(d) {return d.cdp == cdp;}))
+        .attr('d', markLineFn)
+
+
+    }
+
+    scope.$watch('data', function() {
+      console.log('d3-velan in watch');
+      data = scope.data.varr;
+      init();
+    })
   }
 
   return {
@@ -202,7 +302,8 @@ angular.module('psvelApp')
     restrict: 'E',
     scope: {
       data: '=',
-      setpicks: '&'
+      setpicks: '&',
+      settv: '&'
     }
   }
 }])

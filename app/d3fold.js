@@ -23,7 +23,7 @@ angular.module('psvelApp')
     var cdpmin = d3.min(data, function(d) {return d.cdp;});
     var cdpmax = d3.max(data, function(d) {return d.cdp;});
     var foldmin = d3.min(data, function(d) {return d.fold;});
-    var foldmax = d3.min(data, function(d) {return d.fold;});
+    var foldmax = d3.max(data, function(d) {return d.fold;});
 
     var xScale = d3.scaleLinear().range([0, w]).domain([0, cdpmax]);
     var yScale = d3.scaleLinear().range([h, 0]).domain([0, foldmax]);
@@ -50,6 +50,10 @@ angular.module('psvelApp')
       .attr('cy', function(d) {return yScale(d.fold);})
       .attr('r', '2px')
       .attr('fill', 'blue')
+
+    svg.append('text')
+      .text('CDP Fold')
+      .attr('transform', 'translate(' + w/2 + ',0)')
   }
 
   return {

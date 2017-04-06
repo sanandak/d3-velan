@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html ng-app="psvelApp">
 <head>
-  <title>d3-based SU Picker</title>
+  <title>d3-based Velocity Picker</title>
   <script src="bower_components/d3/d3.min.js" charset="utf-8"></script>
   <script src="bower_components/angular/angular.min.js" charset="utf-8"></script>
   <script type="text/javascript" src="app/app.js" charset="utf-8"></script>
@@ -44,11 +44,14 @@
         Number of Ensembles: {{mainctrl.nens}}, Ensemble 0:{{mainctrl.ens0}},
         Ensemble N: {{mainctrl.ensN}}</br>
         Current Ens<input type="number" min="mainctrl.ens0" max="mainctrl.ensN" ng-model="mainctrl.currEns">
+        <button class="btn btn-primary btn-large" ng-click="mainctrl.getens()">Request CDP</button>
       </div>
 
       <div class="well">
-        <d3-velan ng-if="mainctrl.data" data="mainctrl.data" setpicks="mainctrl.setpicks(picks)"></d3-velan>
-        <d3-seis ng-if="mainctrl.nmodata" data="mainctrl.nmodata"></d3-seis>
+        <h2 ng-if="mainctrl.cdp" align="center">CDP {{mainctrl.cdp}}</h2>
+        <d3-seis ng-if="mainctrl.orig" test="mainctrl.test1" data="mainctrl.orig" tv="mainctrl.tv"></d3-seis>
+        <d3-velan ng-if="mainctrl.data" data="mainctrl.data" setpicks="mainctrl.setpicks(picks)" settv="mainctrl.settv(tv)"></d3-velan>
+        <d3-seis ng-if="mainctrl.nmodata" test="mainctrl.test2" data="mainctrl.nmodata"></d3-seis>
         <div id="tooltip">
           <p><span id="value">
           </p>

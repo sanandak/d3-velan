@@ -1,6 +1,6 @@
 /* d3-velan - velocity picker */
 
-var _version = '0.2.0';
+var _version = '0.3.0';
 var fs = require('fs')
 var path = require('path')
 var app = angular.module('psvelApp', []);
@@ -10,11 +10,18 @@ app.controller('MainCtrl', ['$scope', function ($scope) {
   self.version = _version;
   self.data = null;
   self.nmodata = null;
+  self.orig = null;
   self.cdpfold = null;
   self.filename = null;
   self.fv = 1500;
   self.dv = 100;
   self.nv = 50;
+  self.cdp = null;
+  self.test1 = 1;
+  self.test2 = 2;
+
+  self.tv = null; // passed to d3-seis to plot an nmo line...
+
   var wsURL = 'ws://localhost:9191/websocket';
   var ws, servMsg;
   self.wsIsOpen = false;
@@ -54,16 +61,6 @@ app.controller('MainCtrl', ['$scope', function ($scope) {
       servMsg = {cmd:'getSegyHdrs', filename: self.filename};
       ws.send(JSON.stringify(servMsg));
 
-      // FIXME - ensemble from user...
-      servMsg = {cmd:'getVelan', ensemble:'1',
-        fv:self.fv, dv:self.dv, nv:self.nv};
-      ws.send(JSON.stringify(servMsg));
-
-      // get an uncorrected cdp gather
-      servMsg = {cmd:'getNMO', filename:self.filename,
-        ensemble: '1', vnmo: vstr, tnmo: tstr};
-      ws.send(JSON.stringify(servMsg));
-
       ws.onmessage = function(evt) {
         var msg = JSON.parse(evt.data);
         if(msg['cmd'] === 'getSegyHdrs') {
@@ -88,25 +85,6 @@ app.controller('MainCtrl', ['$scope', function ($scope) {
           console.log('cdpfold', self.cdpfold);
           $scope.$apply();
 //          console.log(self.nens, self.ens0, self.ensN, self.dt, self.currEns);
-        } else if (msg['cmd'] === 'getVelan') {
-          console.log('velan');
-          var velan = JSON.parse(msg['velan']);
-          //console.log(velan['traces']);
-          var trcs = velan['traces'];
-          var varr = [];
-          for(var i=0; i<trcs.length; i++) {
-            for(var j=0; j<trcs[i].samps.length; j++) {
-              varr.push(trcs[i].samps[j]);
-            }
-          }
-          console.log(varr);
-          self.data = varr;
-          $scope.$apply();
-        } else if(msg['cmd'] === 'getNMO') {
-          var nmogath = JSON.parse(msg['NMO']);
-          console.log(nmogath);
-          self.nmodata=nmogath;
-          $scope.$apply();
         }
       }
     })
@@ -114,44 +92,105 @@ app.controller('MainCtrl', ['$scope', function ($scope) {
     chooser.click();
   }
 
-  // when the user chooses "save", this function is called
-   self.save = function() {
-    //console.log('savemenu click');
-    var chooser = document.getElementById('savefile');
-    //console.log(chooser);
-    chooser.addEventListener('change', function() {
-      var filepath = this.value;
-      console.log(filepath);
-//      console.log(picks);
-      fs.writeFileSync(filepath,
-        JSON.stringify({
-          'sufile':self.filename,
-          'picktime':new Date(),
-          'picks': self.vpicks
-        }));
-      //      fs.writeFileSync(filepath, JSON.stringify(pickedTraces));
-    })
-    chooser.click();
-   };
+  self.getens = function() {
+    servMsg = {cmd:'getVelan', ensemble:self.currEns,
+      fv:self.fv, dv:self.dv, nv:self.nv};
+    ws.send(JSON.stringify(servMsg));
 
-  // this fn is called the d3-velan when a new pick is made..
+    // get an uncorrected cdp gather
+    tstr="tnmo=0", vstr="vnmo=100000";
+
+    servMsg = {cmd:'getNMO', filename:self.filename,
+      ensemble: self.currEns, vnmo: vstr, tnmo: tstr};
+    ws.send(JSON.stringify(servMsg));
+
+    ws.onmessage = function(evt) {
+      var msg = JSON.parse(evt.data);
+      if (msg['cmd'] === 'getVelan') {
+        var velan = JSON.parse(msg['velan']);
+        console.log('velan', velan);
+        //console.log(velan['traces']);
+        var trcs = velan['traces'];
+        self.cdp = velan['traces'][0].cdp;
+
+        var varr = [];
+        for(var i=0; i<trcs.length; i++) {
+          for(var j=0; j<trcs[i].samps.length; j++) {
+            varr.push(trcs[i].samps[j]);
+          }
+        }
+        console.log(varr, self.cdp);
+        self.data = {'varr':varr,
+          'cdp': self.cdp,
+          'ns': velan.ns,
+          'dt': velan.dt,
+          'fv': velan.fv,
+          'nv': velan.nv,
+          'dv': velan.dv};
+        $scope.$apply();
+      } else if(msg['cmd'] === 'getNMO') {
+        var nmogath = JSON.parse(msg['NMO']);
+        console.log(nmogath);
+        self.nmodata=nmogath;
+        self.orig = JSON.parse(msg['NMO']); // make a separate copy
+        $scope.$apply();
+      }
+    }
+  }
+
+  // when the user chooses "save", this function is called
+  self.save = function() {
+  //console.log('savemenu click');
+  var chooser = document.getElementById('savefile');
+  //console.log(chooser);
+  chooser.addEventListener('change', function() {
+    var filepath = this.value;
+    console.log(filepath);
+  //      console.log(picks);
+    fs.writeFileSync(filepath,
+      JSON.stringify({
+        'sufile':self.filename,
+        'picktime':new Date(),
+        'picks': self.allpicks
+      }));
+    //      fs.writeFileSync(filepath, JSON.stringify(pickedTraces));
+  })
+  chooser.click();
+  };
+
+  self.settv = function(tv){
+    //console.log('tv', tv);
+    self.tv = tv;
+    $scope.$apply()
+  };
+
+   // this fn is called the d3-velan when a new pick is made..
   self.setpicks = function(picks) {
     console.log('setpicks', picks);
-    if(picks.length === 0) { // deleted all picks...
+
+    var cdppicks = picks.find(function(d) {return d.cdp == self.cdp;});
+    var vpicks = [];
+    if(typeof cdppicks == 'undefined') {
+      vpicks = [];
+    } else {
+      vpicks = cdppicks.picks;
+    }
+    
+    if(vpicks.length === 0) { // deleted all picks...
       tstr="tnmo=0";
       vstr="vnmo=100000"; // kludge - no nmo = nmo at high vel?
     } else {
       tstr = 'tnmo=';
-      tstr+=picks.map(function(d){return d.t * 1000;}).join(',');
+      tstr+=vpicks.map(function(d){return d.t * 1000;}).join(',');
       vstr = 'vnmo=';
-      vstr += picks.map(function(d) {return d.v;}).join(',');
+      vstr += vpicks.map(function(d) {return d.v;}).join(',');
     }
     console.log(tstr, vstr);
     // update the local copy of picks - for savefile
-    self.vpicks = picks;
+    self.allpicks = picks;
 
     servMsg = {cmd:'getNMO', filename:self.filename,
-      ensemble: '1', vnmo: vstr, tnmo: tstr};
+      ensemble: self.currEns, vnmo: vstr, tnmo: tstr};
     ws.send(JSON.stringify(servMsg));
     ws.onmessage = function(evt) {
       var msg = JSON.parse(evt.data);
