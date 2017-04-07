@@ -4,7 +4,7 @@ angular.module('psvelApp')
 .directive('d3Velan', [function() {
   function link(scope, element) {
     'use strict';
-    var margins = {left: 50,right: 30,top: 30,bottom: 30},
+    var margins = {left: 50,right: 30,top: 50, bottom: 30},
       w = 400 - margins.left - margins.right,
       h = 600 - margins.top - margins.bottom;
 
@@ -20,8 +20,9 @@ angular.module('psvelApp')
         .append('g')
         .attr('transform', 'translate(' + margins.left + ',' + margins.top + ')');
 
-    var color = d3.scaleSequential(d3.interpolateWarm);
-
+    //var color = d3.scaleSequential(d3.interpolateWarm);
+    var color = d3.scaleQuantize()
+        .range(['#a50026','#d73027','#f46d43','#fdae61','#fee090','#e0f3f8','#abd9e9','#74add1','#4575b4','#313695'].reverse())
     var nv, dv, vmin, vmax, nt, dt, tmin, tmax;
     var vWidth, tWidth;
     var cdp;
@@ -31,6 +32,18 @@ angular.module('psvelApp')
     var tScale = d3.scaleLinear();
     var vAxis = d3.axisTop(vScale);
     var tAxis = d3.axisLeft(tScale);
+
+
+    // initially the tooltip is hidden.. when we mouseover, display it
+    d3.select('#tooltip').classed('hidden', true);
+    
+    svg.append('text')
+      .text('Velocity (<ft or m>/s)')
+      .attr('x', w/2)
+      .attr('text-anchor', 'middle')
+      .attr('font', '12px sans-serif')
+      .attr('dy', '-1.5em')
+
 
     // velocity picks...
     var allpicks = []; // [{cdp:.., picks:..}, {cdp:.., picks:..}...]
@@ -48,7 +61,7 @@ angular.module('psvelApp')
     console.log('amax', amax);
     //amax = 1;
 
-    color.domain([0,amax])
+    color.domain([0, amax])
 
     // unique pick id - used for the d3 data join
     var pkId = 0;
@@ -79,7 +92,7 @@ angular.module('psvelApp')
       .attr('y', function(d) {return tScale(d.t) - tWidth/2;})
       .attr('width', vWidth)
       .attr('height', tWidth)
-      .style('fill', function(d){return color(d.a/amax);})
+      .style('fill', function(d){return color(d.a);})
       .on('mousemove', function(d){
         var m = d3.mouse(this);
         var mvel = Math.floor(vScale.invert(m[0] + vWidth/2) / dv) * dv;

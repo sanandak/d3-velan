@@ -26,7 +26,7 @@ angular.module('psvelApp')
     var foldmax = d3.max(data, function(d) {return d.fold;});
 
     var xScale = d3.scaleLinear().range([0, w]).domain([0, cdpmax]);
-    var yScale = d3.scaleLinear().range([h, 0]).domain([0, foldmax]);
+    var yScale = d3.scaleLinear().range([h, 0]).domain([0, foldmax]).nice();
 
     var xAxis = d3.axisBottom(xScale);
     var yAxis = d3.axisLeft(yScale);
@@ -53,7 +53,8 @@ angular.module('psvelApp')
 
     svg.append('text')
       .text('CDP Fold')
-      .attr('transform', 'translate(' + w/2 + ',0)')
+      .attr('transform', 'translate(' + w/2 + ',-10)')
+
   }
 
   return {

@@ -14,10 +14,16 @@ angular.module('psvelApp')
     function link(scope, element, attr) {
       'use strict';
 
-      console.log(scope.test);
+      console.log('started d3seis, test:', scope.test);
+
+      // FIXME - implemented this...
+//      var wt = document.getElementById('wt')
+//      wt.addEventListener('change', function() {
+//        console.log('add ev listener', scope.test, wt, wt.checked);
+//      });
 
       // size of the focus window (500x600)
-      var margins2 = {left: 50,right: 30,top: 30,bottom: 30},
+      var margins2 = {left: 50,right: 30,top: 50, bottom: 30},
         w2 = 400 - margins2.left - margins2.right,
         h2 = 600 - margins2.top - margins2.bottom;
 
@@ -78,6 +84,21 @@ angular.module('psvelApp')
           .attr('height', h2 + margins2.top + margins2.bottom)
           .append('g')
           .attr('transform', 'translate(' + margins2.left + ',' + margins2.top + ')')
+
+      focus.append('text')
+        .text('Offset (<ft or m>)')
+        .attr('x', w2/2)
+        .attr('text-anchor', 'middle')
+        .attr('font', '12px sans-serif')    
+        .attr('dy', '-1.5em')
+
+      focus.append('text')
+        .attr('transform', 'rotate(-90)')
+        .attr('y', 0-margins2.left)
+        .attr('x', 0-(h2/2))
+        .attr('dy', '1em')
+        .style('text-anchor', 'middle')
+        .text('Time (s)')
 
 
 
@@ -180,7 +201,7 @@ angular.module('psvelApp')
 
       var updateFocusLines = function() {
         ntrcsFoc = lastTrc - firstTrc + 1;
-        //console.log('update lines', lastTrc, firstTrc, ntrcsFoc);
+        console.log('update lines', lastTrc, firstTrc, ntrcsFoc);
         var l = focus.selectAll('.flineg')
             .selectAll('.fline')
             .data(traces.slice(firstTrc, lastTrc + 1), function(d) {
@@ -197,7 +218,10 @@ angular.module('psvelApp')
             xofsFoc = (w2 / ntrcsFoc * i);
             //          console.log('update line',i, xofsFoc);
             return 'translate(' + xofsFoc + ',0) scale(' + 1 / ntrcsFoc + ',1)';
-          });
+          })
+          .attr('stroke-width', '0.5px')
+          .attr('stroke', 'black')
+        
         // remove any old ones
         l.exit().remove();
 
@@ -246,9 +270,10 @@ angular.module('psvelApp')
           .attr('class', 'fareag');
       updateFocusAreas();
 
-//      var flineg = clipping.append('g')
-//          .attr('class', 'flineg');
-//      updateFocusLines();
+      var flineg = clipping.append('g')
+          .attr('class', 'flineg');
+      updateFocusLines();
+      
       focus.append('g')
         .attr('class', 'axis x-axis')
         .call(oAxis2.ticks(5));
@@ -346,7 +371,7 @@ angular.module('psvelApp')
             var scl = d3.event.shiftKey ? 0.5 : 2;
 
             displayScale *= scl;
-//            updateFocusLines();
+            updateFocusLines();
             updateFocusAreas();
           }
 
@@ -619,7 +644,7 @@ angular.module('psvelApp')
             firstTrc = Math.max(cursTrc - Math.floor(ntrcsFoc/4), 0);
             lastTrc = Math.min(cursTrc + Math.floor(ntrcsFoc/4), ntrcs-1);
             ntrcsFoc = lastTrc - firstTrc + 1;
-//            updateFocusLines();
+            updateFocusLines();
             updateFocusAreas();
 
             updateCursor();
@@ -642,7 +667,8 @@ angular.module('psvelApp')
             lastTrc = ntrcs - 1;
             ntrcsFoc = lastTrc - firstTrc + 1;
             //console.log('trcs', cursTrc, firstTrc, lastTrc);
-//            updateFocusLines();
+            
+            updateFocusLines();
             updateFocusAreas();
             updateCursor();
 
@@ -773,7 +799,7 @@ angular.module('psvelApp')
         init();
 
         // update all...
-//        updateFocusLines();
+        updateFocusLines();
         updateFocusAreas();
         updateCursor();
         updatePicks();

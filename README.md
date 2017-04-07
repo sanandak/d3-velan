@@ -37,6 +37,8 @@ Install `bower` (another package manager(?))
 
 Install python3 3.5 or less (preferably through anaconda (http://continuum.io))
 
+    conda create -n obspy python=3.4 # create a virtual environment
+    conda activate obspy
     conda config --add channels conda-forge
     conda install obspy
     conda install websockets

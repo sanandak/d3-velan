@@ -1,6 +1,6 @@
 /* d3-velan - velocity picker */
 
-var _version = '0.3.0';
+var _version = '0.4.0';
 var fs = require('fs')
 var path = require('path')
 var app = angular.module('psvelApp', []);
